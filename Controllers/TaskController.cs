@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using webapi1.Services;
+using webapi1.Models;
 
 namespace webapi1.Controllers;
 
@@ -8,93 +10,46 @@ public class TaskController : ControllerBase
 {
     private readonly ILogger<TaskController> _logger;
 
-    private static List<Task> tasks = new List<Task>(){
-        new Task{
-            Title = "task 1",
-            Completed = true
-        },
-        new Task{
-            Title = "task 2",
-            Completed = false
-        },
-        new Task{
-            Title = "task 3",
-            Completed = false
-        }
-    };
+    private ITaskService _taskservice;
 
-    public TaskController(ILogger<TaskController> logger)
+    public TaskController(ILogger<TaskController> logger, ITaskService taskservice)
     {
         _logger = logger;
+        _taskservice = taskservice;
     }
 
     [HttpGet]
-    public List<Task> Get(){
-        return tasks;
+    public List<TaskModel> Get(){
+        return _taskservice.GetAll();
     }
 
-    // [HttpGet("{id}")]
-    // public Task Get(Guid id){
-    //     return tasks.FirstOrDefault(t => t.Id == id);
-    // }
-
-    [HttpGet("{title}")]
-    public Task Get(string title){
-        //var result = tasks.Where(t => t.Title.Contains(title)).FirstOrDefault();
-        var result = tasks.Where(t => String.Equals(t.Title,title)).FirstOrDefault();
-        return result;
+    [HttpGet("{id}")]
+    public TaskModel Get(Guid id){
+       return _taskservice.Get(id);
     }
 
     [HttpPost]
-    public void Add([FromBody] Task task){
-        
-        // tasks.Add(task);
-
-        var taskAdd = new Task{
-                Title = task.Title,
-                Completed = task.Completed
-            };
-        var check = tasks.Where(t => t.Id == taskAdd.Id).Count();
-        if(check == 0){
-            tasks.Add(taskAdd);
-        }
+    public void Add([FromBody] TaskModel task){
+        _taskservice.Add(task);
     }
 
-    [HttpPut("{title}")]
-    public void Update(string title, [FromBody] Task task){
-        var taskUpdate = tasks.Where(t => String.Equals(t.Title,title)).FirstOrDefault();
-        if(taskUpdate != null){
-            taskUpdate.Title = task.Title;
-            taskUpdate.Completed = task.Completed;
-        }
+    [HttpPut("{id}")]
+    public void Update(Guid id, [FromBody] TaskModel task){
+        _taskservice.Update(id, task);
     }
 
-    [HttpDelete]
-    public void Delete(string title){
-        var task = tasks.Where(t => String.Equals(t.Title,title)).FirstOrDefault();
-        if(task != null){
-            tasks.Remove(task);
-        }
+    [HttpDelete("{id}")]
+    public void Delete(Guid id){
+        _taskservice.Delete(id);
     }
 
-    [HttpPost("{addmultiple}")]
-    public void Add(bool addmultiple, List<Task> taskslist){
-        if(addmultiple == true){
-            foreach(Task t in taskslist){
-                tasks.Add(t);
-            }
-        }
+    [HttpPost("Add/Multiple")]
+    public void Add(List<TaskModel> taskslist){
+        _taskservice.Add(taskslist);
     }
 
-    [HttpDelete("{deletemultiple}")]
-    public void Delete(bool deletemultiple, List<string> titlelist){
-        if (deletemultiple == true){
-            foreach(string title in titlelist){
-                var task = tasks.Where(t => String.Equals(t.Title,title)).FirstOrDefault();
-                if(task != null){
-                    tasks.Remove(task);
-                }
-            }
-        }
+    [HttpDelete("Delete/Multiple")]
+    public void Delete(List<Guid> idlist){
+       _taskservice.Delete(idlist);
     }
 }
